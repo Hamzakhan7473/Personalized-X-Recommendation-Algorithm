@@ -46,36 +46,48 @@ A **tunable, inspectable, and user-programmable** reimplementation of X’s “F
 └── README.md
 ```
 
-## Push to GitHub (this project only – no Taxora)
+## Branches
 
-This repo must contain **only** the Personalized-X-Recommendation-Algorithm project. Do not run git from your home directory or from a folder that contains Taxora or other repos.
+| Branch     | Use for                         |
+|------------|----------------------------------|
+| `main`     | Stable, merged code              |
+| `backend`  | Backend work (FastAPI, ranking)  |
+| `frontend` | Frontend work (Next.js, UI)      |
 
-**To fix the repo** (if Taxora or other content was pushed by mistake) and push only this project:
+**Switch branch:**
+```bash
+git checkout backend
+git checkout frontend
+```
 
-1. Open your **system terminal** (Terminal.app, not Cursor’s).
-2. Go only into this project folder:
-   ```bash
-   cd "/Users/hamzakhan/ Personalized-X-Recommendation-Algorithm"
-   ```
-3. Run:
-   ```bash
-   chmod +x push_to_github.sh
-   ./push_to_github.sh
-   ```
-4. When asked, type `y` to **force-push**. This **replaces** whatever is on GitHub with only this project’s files (backend, README, etc.). No Taxora.
+**Push a branch to GitHub** — run **one line at a time** (do not copy a line that has a comment on the same line):
+```bash
+git push -u origin backend
+```
+```bash
+git push -u origin frontend
+```
 
-**Manual fix** (same idea – run only from this project folder):
+## Push to GitHub
 
+Run these from **this project folder** in your terminal:
+
+**Option 1 – script**
 ```bash
 cd "/Users/hamzakhan/ Personalized-X-Recommendation-Algorithm"
-rm -rf .git
-git init
-git branch -M main
-git add .
-git commit -m "Personalized X Recommendation Algorithm only"
-git remote add origin https://github.com/Hamzakhan7473/Personalized-X-Recommendation-Algorithm.git
-git push -u origin main --force
+chmod +x push_to_github.sh
+./push_to_github.sh
 ```
+
+**Option 2 – manual**
+```bash
+cd "/Users/hamzakhan/ Personalized-X-Recommendation-Algorithm"
+git add .
+git commit -m "Update"
+git remote add origin https://github.com/Hamzakhan7473/Personalized-X-Recommendation-Algorithm.git
+git push -u origin main
+```
+If the repo already has a remote, use `git push origin main` (or `git push origin backend` / `git push origin frontend` for those branches).
 
 ## Quick start
 
