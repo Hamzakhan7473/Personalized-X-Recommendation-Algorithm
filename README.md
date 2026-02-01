@@ -37,6 +37,24 @@ A **tunable, inspectable, and user-programmable** reimplementation of X’s “F
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+## Branches
+
+| Branch     | Use for                          |
+|------------|-----------------------------------|
+| `main`     | Stable, merged code               |
+| `backend`  | Backend work (FastAPI, ranking)   |
+| `frontend` | Frontend work (Next.js, UI)       |
+
+```bash
+# Switch to backend or frontend
+git checkout backend
+git checkout frontend
+
+# Push a branch to GitHub (first time)
+git push -u origin backend
+git push -u origin frontend
+```
+
 ## Project structure
 
 ```
