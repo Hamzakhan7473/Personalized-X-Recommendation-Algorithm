@@ -31,6 +31,10 @@ class Store:
     def list_user_ids(self) -> list[str]:
         return list(self._users.keys())
 
+    def update_user(self, user: User) -> None:
+        """Replace user (e.g. after follow/unfollow)."""
+        self._users[user.id] = user
+
     # ---- Posts ----
     def add_post(self, post: Post) -> None:
         self._posts[post.id] = post
@@ -76,6 +80,18 @@ class Store:
                 acc.append((p.created_at, p.id))
         acc.sort(reverse=True, key=lambda x: x[0])
         return [pid for _, pid in acc[:limit]]
+
+    def get_topic_counts(self, max_age_seconds: float | None = None, limit: int = 20) -> list[tuple[str, int]]:
+        """Return (topic, count) for recent posts, sorted by count descending."""
+        cutoff = time.time() - (max_age_seconds or self._retention_seconds)
+        counts: dict[str, int] = {}
+        for p in self._posts.values():
+            if p.created_at < cutoff:
+                continue
+            for t in p.topics:
+                counts[t.value] = counts.get(t.value, 0) + 1
+        sorted_topics = sorted(counts.items(), key=lambda x: -x[1])
+        return sorted_topics[:limit]
 
     # ---- Engagements ----
     def add_engagement(self, e: Engagement) -> None:
