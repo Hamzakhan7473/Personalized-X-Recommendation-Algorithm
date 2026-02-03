@@ -93,7 +93,8 @@ Backend (Python):
 cd backend && pip install -r requirements.txt && uvicorn main:app --reload
 ```
 
-API: `POST /api/feed` with `user_id` and optional `AlgorithmPreferences`; response includes ranked items and per-item `ranking_explanation`.
+- **API docs (OpenAPI/Swagger):** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) when the server is running.
+- **API:** `POST /api/feed` with `user_id` and optional `AlgorithmPreferences`; response includes ranked items and per-item `ranking_explanation`. Also: `GET /api/feed/{user_id}`, `GET/PUT /api/users/{user_id}/preferences`, `POST /api/posts`, `GET /api/trends`, `POST /api/users/{user_id}/follow` and `/unfollow`, `POST /api/engage`.
 
 ## License
 

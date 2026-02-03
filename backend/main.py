@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+import uuid
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -18,6 +20,7 @@ from schemas import (
     FeedResponse,
     Post,
     PostType,
+    Topic,
     User,
 )
 from store import Store
@@ -121,12 +124,95 @@ def list_users(limit: int = 100) -> dict[str, Any]:
 
 
 # -------- Posts --------
+class CreatePostBody(BaseModel):
+    author_id: str
+    text: str = Field(..., min_length=1, max_length=280)
+    topics: list[str] = Field(default_factory=list, description="e.g. tech, politics, memes, finance, culture, news, other")
+
+
+@app.post("/api/posts", response_model=Post)
+def create_post(body: CreatePostBody) -> Post:
+    """Create a new post. Returns the created post."""
+    if store.get_user(body.author_id) is None:
+        raise HTTPException(404, "Author not found")
+    topic_list = []
+    for t in body.topics:
+        try:
+            topic_list.append(Topic(t))
+        except ValueError:
+            pass
+    post_id = f"p_{uuid.uuid4().hex[:12]}"
+    post = Post(
+        id=post_id,
+        author_id=body.author_id,
+        text=body.text.strip(),
+        post_type=PostType.ORIGINAL,
+        topics=topic_list,
+        created_at=time.time(),
+        like_count=0,
+        repost_count=0,
+        reply_count=0,
+        quote_count=0,
+        view_count=0,
+    )
+    store.add_post(post)
+    return post
+
+
 @app.get("/api/posts/{post_id}", response_model=Post)
 def get_post(post_id: str) -> Post:
     p = store.get_post(post_id)
     if p is None:
         raise HTTPException(404, "Post not found")
     return p
+
+
+# -------- Trends --------
+@app.get("/api/trends")
+def get_trends(limit: int = 10, max_age_hours: float = 168) -> dict[str, Any]:
+    """Return trending topics from recent posts (topic -> count), sorted by count descending."""
+    max_age_seconds = max_age_hours * 3600
+    pairs = store.get_topic_counts(max_age_seconds=max_age_seconds, limit=limit)
+    return {"trends": [{"topic": t, "count": c} for t, c in pairs]}
+
+
+# -------- Follow / Unfollow --------
+class FollowBody(BaseModel):
+    target_id: str
+
+
+@app.post("/api/users/{user_id}/follow", response_model=User)
+def follow(user_id: str, body: FollowBody) -> User:
+    """Add target to user's following list; update both users."""
+    user = store.get_user(user_id)
+    target = store.get_user(body.target_id)
+    if user is None or target is None:
+        raise HTTPException(404, "User or target not found")
+    if body.target_id in user.following_ids:
+        return user
+    new_following = list(user.following_ids) + [body.target_id]
+    user_updated = user.model_copy(update={"following_ids": new_following, "following_count": len(new_following)})
+    target_updated = target.model_copy(update={"followers_count": target.followers_count + 1})
+    store.update_user(user_updated)
+    store.update_user(target_updated)
+    return user_updated
+
+
+@app.post("/api/users/{user_id}/unfollow", response_model=User)
+def unfollow(user_id: str, body: FollowBody) -> User:
+    """Remove target from user's following list; update both users."""
+    user = store.get_user(user_id)
+    target = store.get_user(body.target_id)
+    if user is None or target is None:
+        raise HTTPException(404, "User or target not found")
+    if body.target_id not in user.following_ids:
+        return user
+    new_following = [x for x in user.following_ids if x != body.target_id]
+    user_updated = user.model_copy(update={"following_ids": new_following, "following_count": len(new_following)})
+    target_updated = target.model_copy(update={"followers_count": max(0, target.followers_count - 1)})
+    store.update_user(user_updated)
+    store.update_user(target_updated)
+    return user_updated
 
 
 # -------- Engagement --------
@@ -139,7 +225,6 @@ class EngageBody(BaseModel):
 @app.post("/api/engage")
 def engage(body: EngageBody) -> dict[str, str]:
     """Record a like, repost, reply, quote, or not_interested. Updates feed on next request."""
-    import time
     try:
         et = EngagementType(body.engagement_type)
     except ValueError:
