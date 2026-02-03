@@ -25,6 +25,8 @@ from store import Store
 # -------- In-memory store (single process) --------
 store = Store(retention_seconds=86400 * 14)
 mixer = HomeMixer(store)
+# Per-user algorithm preferences (persisted for session / process lifetime)
+user_preferences: dict[str, AlgorithmPreferences] = {}
 
 
 @asynccontextmanager
@@ -59,9 +61,11 @@ def get_feed(req: FeedRequest) -> FeedResponse:
     """Return ranked For You feed for the user with optional explanations."""
     if store.get_user(req.user_id) is None:
         raise HTTPException(404, "User not found")
+    # Use request preferences if provided, else stored preferences, else defaults
+    prefs = req.preferences or user_preferences.get(req.user_id)
     return mixer.get_feed(
         user_id=req.user_id,
-        preferences=req.preferences,
+        preferences=prefs,
         limit=req.limit,
         seen_post_ids=set(),
         include_explanations=req.include_explanations,
@@ -74,12 +78,13 @@ def get_feed_get(
     limit: int = 50,
     include_explanations: bool = True,
 ) -> FeedResponse:
-    """GET variant of feed (uses default preferences)."""
+    """GET variant of feed (uses stored or default preferences)."""
     if store.get_user(user_id) is None:
         raise HTTPException(404, "User not found")
+    prefs = user_preferences.get(user_id)
     return mixer.get_feed(
         user_id=user_id,
-        preferences=None,
+        preferences=prefs,
         limit=limit,
         include_explanations=include_explanations,
     )
@@ -89,14 +94,13 @@ def get_feed_get(
 @app.get("/api/users/{user_id}/preferences", response_model=AlgorithmPreferences)
 def get_preferences(user_id: str) -> AlgorithmPreferences:
     """Return current algorithm preferences for the user (defaults if not stored)."""
-    # In-memory: we could persist per-user prefs; for now return defaults
-    return AlgorithmPreferences()
+    return user_preferences.get(user_id, AlgorithmPreferences())
 
 
 @app.put("/api/users/{user_id}/preferences", response_model=AlgorithmPreferences)
 def put_preferences(user_id: str, body: PreferencesUpdate) -> AlgorithmPreferences:
-    """Update algorithm preferences for the user. Pass preferences in body."""
-    # Persist in app state or DB; for now we just echo and use in next feed request
+    """Update algorithm preferences for the user. Stored in memory for process lifetime."""
+    user_preferences[user_id] = body.preferences
     return body.preferences
 
 
@@ -156,9 +160,10 @@ def explain_feed(user_id: str, limit: int = 20) -> FeedResponse:
     """Return feed with full ranking explanations for each item."""
     if store.get_user(user_id) is None:
         raise HTTPException(404, "User not found")
+    prefs = user_preferences.get(user_id)
     return mixer.get_feed(
         user_id=user_id,
-        preferences=None,
+        preferences=prefs,
         limit=limit,
         include_explanations=True,
     )
