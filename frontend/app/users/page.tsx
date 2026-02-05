@@ -26,7 +26,7 @@ export default function UsersPage() {
     if (targetId === currentUserId) return;
     try {
       await follow(currentUserId, targetId);
-      setFollowing((prev) => new Set([...prev, targetId]));
+      setFollowing((prev) => new Set(Array.from(prev).concat(targetId)));
       setUsers((prev) =>
         prev.map((u) =>
           u.id === targetId ? { ...u, followers_count: u.followers_count + 1 } : u

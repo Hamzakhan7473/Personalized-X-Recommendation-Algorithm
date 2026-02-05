@@ -1,4 +1,4 @@
-"""Seed store with synthetic users and posts (no LLM yet). LLM personas in personas.py."""
+"""Seed store with synthetic users and posts. No external APIs required."""
 
 from __future__ import annotations
 

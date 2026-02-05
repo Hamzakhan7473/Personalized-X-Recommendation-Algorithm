@@ -18,5 +18,6 @@
 
 ## Current status
 
-- **Backend**: Full API: feed, preferences, users, posts (create), trends, follow/unfollow, engage. Seed on startup. Optional: SQLite persistence.
-- **Frontend**: Next.js app with feed, preference sliders, trends, like/repost/reply, ranking explainability. Run: `cd frontend && npm install && npm run dev`.
+- **Backend**: Full API: feed, preferences, users, posts (create), trends, follow/unfollow, engage. Seed on startup. **No API keys required.** Optional: SQLite persistence.
+- **Frontend**: Next.js app with feed, preference sliders, trends, like/repost/reply, ranking explainability, People page. Run: `cd frontend && npm install && npm run dev`. Build: `npm run build`.
+- **Project**: Runs end-to-end with no Google/OpenAI/third-party keys. See README "No API keys required" and "Run the project".
