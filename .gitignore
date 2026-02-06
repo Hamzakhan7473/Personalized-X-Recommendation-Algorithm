@@ -29,8 +29,12 @@ out/
 *.swp
 *.swo
 
-# Keys / secrets
+# Keys / secrets – do not push .env (API keys, etc.)
+.env
+.env.local
 .env*
+backend/.env
+frontend/.env.local
 !.env.example
 !backend/.env.example
 !frontend/.env.local.example
