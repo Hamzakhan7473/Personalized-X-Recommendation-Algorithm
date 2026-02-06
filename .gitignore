@@ -31,3 +31,4 @@ out/
 # Keys / secrets
 .env*
 !.env.example
+!frontend/.env.local.example
