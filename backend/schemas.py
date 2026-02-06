@@ -94,6 +94,24 @@ class Engagement(BaseModel):
     created_at: float
 
 
+# ---------- Notifications ----------
+class NotificationType(str, Enum):
+    LIKE = "like"
+    REPOST = "repost"
+    REPLY = "reply"
+    QUOTE = "quote"
+    FOLLOW = "follow"
+
+
+class Notification(BaseModel):
+    id: str
+    recipient_id: str
+    actor_id: str  # who did the action
+    notification_type: NotificationType
+    post_id: str | None = None  # for like/repost/reply/quote
+    created_at: float
+
+
 # ---------- Algorithm Preferences (tunable) ----------
 class AlgorithmPreferences(BaseModel):
     """User-facing sliders that drive ranking. All in [0, 1] unless noted."""
@@ -158,6 +176,8 @@ class FeedRequest(BaseModel):
 class FeedItem(BaseModel):
     post: PostWithAuthor
     ranking_explanation: RankingExplanation | None = None
+    parent_post: PostWithAuthor | None = None  # for replies: the post being replied to
+    quoted_post: PostWithAuthor | None = None  # for quote tweets: the quoted post
 
 
 class FeedResponse(BaseModel):

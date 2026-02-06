@@ -71,6 +71,14 @@ class Store:
                     seen += 1
         return out
 
+    def get_posts_by_author(self, author_id: str, limit: int = 50) -> list[Post]:
+        """Posts by this author, newest first (for profile timeline)."""
+        if author_id not in self._recent_by_author:
+            return []
+        pids = list(reversed(self._recent_by_author[author_id]))[:limit]
+        posts = [self._posts[pid] for pid in pids if self._posts.get(pid)]
+        return sorted(posts, key=lambda p: p.created_at, reverse=True)
+
     def get_global_recent(self, limit: int = 500, max_age_seconds: float | None = None) -> list[str]:
         """Global recent post IDs for OON candidate pool."""
         cutoff = (time.time() - (max_age_seconds or self._retention_seconds))

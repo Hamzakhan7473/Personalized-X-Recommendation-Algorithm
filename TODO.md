@@ -5,7 +5,7 @@
 - [x] **Persist user preferences** – PUT `/api/users/{user_id}/preferences` stored in `user_preferences` dict; GET feed uses stored prefs.
 - [x] **POST /api/posts** – Create a post (author_id, text, topics). GET **/api/trends** – Return trending topics (topic counts from recent posts).
 - [x] **Follow / unfollow** – POST `/api/users/{user_id}/follow` and `/unfollow` with target_id; update `User.following_ids` in store.
-- [ ] **Optional persistence** – SQLite (or aiosqlite) for users, posts, engagements so data survives server restart.
+- [x] **Optional persistence** – SQLite for users, posts, engagements, preferences, sessions, notifications; data survives server restart (`backend/data/app.db`).
 - [x] **Docs** – Link to `/docs` (OpenAPI) in README; endpoints documented.
 
 ## Frontend (after backend is solid)
@@ -18,6 +18,6 @@
 
 ## Current status
 
-- **Backend**: Full API: feed, preferences, users, posts (create), trends, follow/unfollow, engage. Seed on startup. **No API keys required.** Optional: SQLite persistence.
+- **Backend**: Full API: feed, preferences, users, posts (create), trends, follow/unfollow, engage. Seed on startup. **No API keys required.** SQLite persistence in `backend/data/app.db`.
 - **Frontend**: Next.js app with feed, preference sliders, trends, like/repost/reply, ranking explainability, People page. Run: `cd frontend && npm install && npm run dev`. Build: `npm run build`.
 - **Project**: Runs end-to-end with no Google/OpenAI/third-party keys. See README "No API keys required" and "Run the project".

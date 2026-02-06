@@ -69,8 +69,14 @@ def phoenix_source(
 
 
 def get_candidates(store: "Store", user_id: str, friends_vs_global: float, limits: tuple[int, int] = (200, 150)) -> list[Candidate]:
-    """Merge in-network and OON candidates. friends_vs_global in [0,1]: higher = more OON."""
+    """Merge in-network, OON, and optional real-time (news/tweets) candidates. friends_vs_global in [0,1]: higher = more OON."""
     in_net = thunder_source(store, user_id, limit_in_network=limits[0])
     oon = phoenix_source(store, user_id, limit_oon=limits[1], friends_vs_global=friends_vs_global)
-    # Simple merge: in-network first, then OON (scoring will reorder)
-    return in_net + oon
+    # Optional real-time: news API, Twitter stub (when env keys set)
+    try:
+        from .realtime_sources import get_realtime_candidates
+        realtime = get_realtime_candidates(limit=25)
+    except Exception:
+        realtime = []
+    # Simple merge: in-network, then OON, then realtime (scoring will reorder)
+    return in_net + oon + realtime

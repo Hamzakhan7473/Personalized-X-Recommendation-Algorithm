@@ -1,29 +1,47 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUsers, follow, unfollow, type User } from "@/lib/api";
-
-const DEFAULT_USER_ID = "u0";
+import { getUsers, follow, unfollow, getMe, type User } from "@/lib/api";
 
 export default function UsersPage() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState<Set<string>>(new Set());
-  const currentUserId = DEFAULT_USER_ID;
 
   useEffect(() => {
-    getUsers()
-      .then((list) => {
+    const sid = typeof window !== "undefined" ? localStorage.getItem("session_id") : null;
+    if (!sid) {
+      router.replace("/login");
+      return;
+    }
+    getMe()
+      .then((u) => {
+        setCurrentUser(u);
+        return getUsers().then((list) => ({ list, meId: u.id }));
+      })
+      .then(({ list, meId }) => {
         setUsers(list);
-        const me = list.find((u) => u.id === currentUserId);
+        const me = list.find((u) => u.id === meId);
         if (me) setFollowing(new Set(me.following_ids));
       })
+      .catch(() => {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("session_id");
+          localStorage.removeItem("user");
+        }
+        router.replace("/login");
+      })
       .finally(() => setLoading(false));
-  }, [currentUserId]);
+  }, [router]);
+
+  const currentUserId = currentUser?.id ?? "";
 
   const handleFollow = async (targetId: string) => {
-    if (targetId === currentUserId) return;
+    if (targetId === currentUserId || !currentUserId) return;
     try {
       await follow(currentUserId, targetId);
       setFollowing((prev) => new Set(Array.from(prev).concat(targetId)));
@@ -55,7 +73,7 @@ export default function UsersPage() {
     }
   };
 
-  if (loading) return <div className="container"><p>Loading users…</p></div>;
+  if (loading || !currentUser) return <div className="container"><p>Loading users…</p></div>;
 
   return (
     <div className="container">
@@ -64,7 +82,7 @@ export default function UsersPage() {
       </p>
       <h1>People</h1>
       <p style={{ color: "#71767b", marginBottom: "1rem" }}>
-        Viewing as <strong>@{currentUserId}</strong>. Follow/unfollow updates your feed.
+        Signed in as <strong>@{currentUser.handle}</strong>. Follow/unfollow updates your feed.
       </p>
       {users.map((u) => (
         <div key={u.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

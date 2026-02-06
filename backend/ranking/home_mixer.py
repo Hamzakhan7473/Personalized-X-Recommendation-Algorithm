@@ -34,18 +34,23 @@ class HomeMixer:
         limit: int = 50,
         seen_post_ids: set[str] | None = None,
         include_explanations: bool = True,
+        following_only: bool = False,
     ) -> FeedResponse:
-        """Run the full pipeline and return a ranked feed with optional explanations."""
+        """Run the full pipeline and return a ranked feed. If following_only, only in-network (Following tab)."""
         prefs = preferences or AlgorithmPreferences()
         seen = seen_post_ids or set()
 
-        # 1) Candidate sourcing (Thunder + Phoenix-style)
-        candidates = get_candidates(
-            self.store,
-            user_id,
-            friends_vs_global=prefs.friends_vs_global,
-            limits=(200, 150),
-        )
+        # 1) Candidate sourcing
+        if following_only:
+            from .sources import thunder_source
+            candidates = thunder_source(self.store, user_id, limit_in_network=300)
+        else:
+            candidates = get_candidates(
+                self.store,
+                user_id,
+                friends_vs_global=prefs.friends_vs_global,
+                limits=(200, 150),
+            )
 
         # 2) Pre-scoring filters
         filtered = apply_pre_scoring_filters(
@@ -65,7 +70,7 @@ class HomeMixer:
         # 5) Selection: top K
         top = sorted(scored, key=lambda s: s.final_score, reverse=True)[:limit]
 
-        # 6) Build feed items (hydrate author + engagement counts on post)
+        # 6) Build feed items (hydrate author, engagement counts, parent/quoted for threads)
         items: list[FeedItem] = []
         for s in top:
             post = s.candidate.post
@@ -77,10 +82,26 @@ class HomeMixer:
             data["reply_count"] = counts.get("reply", 0)
             data["quote_count"] = counts.get("quote", 0)
             post_with_author = PostWithAuthor(**data, author=author)
+            parent_post = None
+            if post.parent_id:
+                parent_p = self.store.get_post(post.parent_id)
+                if parent_p:
+                    parent_a = self.store.get_user(parent_p.author_id)
+                    parent_data = parent_p.model_dump()
+                    parent_post = PostWithAuthor(**parent_data, author=parent_a)
+            quoted_post = None
+            if post.quoted_id:
+                quoted_p = self.store.get_post(post.quoted_id)
+                if quoted_p:
+                    quoted_a = self.store.get_user(quoted_p.author_id)
+                    quoted_data = quoted_p.model_dump()
+                    quoted_post = PostWithAuthor(**quoted_data, author=quoted_a)
             items.append(
                 FeedItem(
                     post=post_with_author,
                     ranking_explanation=s.explanation if include_explanations else None,
+                    parent_post=parent_post,
+                    quoted_post=quoted_post,
                 )
             )
 
